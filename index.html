@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title>Insta Formatter</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style media="screen">
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #e2dbd1;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    #root {
+      max-width: 450px;
+      margin: 30px auto;
+    }
+
+    .sender-name {
+      font-size: 20px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .message {
+      width: 90%;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+      background-color: #f7f7f7;
+      line-height: 1.35;
+    }
+
+    .message.it-me {
+      margin-left: auto;
+      background-color: #dcf8c7;
+    }
+
+    .message.media {
+      color: blue;
+    }
+
+    .time-stamp {
+      font-style: italic;
+      font-size: 60%;
+      margin-top: 4px;
+      letter-spacing: .5px;
+      text-align: right;
+      color: #444;
+    }
+  </style>
+</head>
+
+<body>
+  <input id="file" type="file" />
+
+  <div id="root"></div>
+</body>
+
+<script type="text/javascript">
+  (function() {
+    function onChange(event) {
+      var reader = new FileReader();
+      reader.onload = onReaderLoad;
+      reader.readAsText(event.target.files[0]);
+    }
+
+    function getFormattedValue(time) {
+      return time < 10 ? '0'+time : time;
+    }
+
+    function getFormattedTime(time) {
+      var date = getFormattedValue(time.getDate());
+      var month = getFormattedValue(time.getMonth() + 1);
+      var year = getFormattedValue(time.getFullYear());
+      var hour = time.getHours();
+      var minute = getFormattedValue(time.getMinutes());
+      var second = getFormattedValue(time.getSeconds());
+
+      var ampm = 'AM';
+
+      if (hour > 12) {
+        hour = hour - 12;
+        ampm = 'PM';
+      }
+      if (hour == 12) {
+        ampm = 'PM';
+      }
+      if (hour == 0) {
+        hour = 12;
+      }
+
+      hour = getFormattedValue(hour);
+      return `${date}-${month}-${year} ${hour}:${minute}:${second} ${ampm}`;
+    }
+
+    function parseMessages(obj) {
+      var they = (obj.participants || [])[0].name;
+      var me = (obj.participants || [])[1].name;
+      var root = document.getElementById('root');
+
+      var nameDiv = document.createElement('div');
+      nameDiv.classList.add('sender-name');
+      nameDiv.innerText = they;
+      root.appendChild(nameDiv);
+
+      var messages = obj.messages || [];
+      messages.slice().reverse().forEach((message) => {
+        var messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+
+        var messageContent = message.content;
+
+        if (!messageContent) {
+          messageContent = Object.keys(message).includes('photos') ? 'Photo' : 'Video';
+          messageDiv.classList.add('media');
+        }
+
+        messageDiv.innerText = messageContent;
+        var time = getFormattedTime(new Date(message.timestamp_ms));
+
+        var timestampDiv = document.createElement('div');
+        timestampDiv.classList.add('time-stamp');
+        timestampDiv.innerText = time;
+
+        messageDiv.appendChild(timestampDiv);
+
+        if (message.sender_name === me) {
+          messageDiv.classList.add('it-me');
+        }
+
+        root.appendChild(messageDiv);
+      });
+    }
+
+    function onReaderLoad(event) {
+      console.log(event.target.result);
+      var obj = JSON.parse(event.target.result);
+
+      var root = document.getElementById('root');
+      root.innerText = '';
+
+      parseMessages(obj);
+    }
+    document.getElementById('file').addEventListener('change', onChange);
+  }());
+</script>
+
+</html>
